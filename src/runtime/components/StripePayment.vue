@@ -17,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRuntimeConfig } from '#app'
+
 interface Props {
     publishableKey?: string
     amount: number
