@@ -1,0 +1,71 @@
+{
+  "name": "nuxt-stripe-payments",
+  "version": "1.0.0",
+  "description": "Lightweight Stripe payment integration for Nuxt 3 with support for all payment methods",
+  "keywords": [
+    "nuxt",
+    "nuxt3",
+    "nuxt-module",
+    "stripe",
+    "payments",
+    "apple-pay",
+    "google-pay",
+    "sepa",
+    "eps"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nuxt-stripe-payments"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs",
+      "require": "./dist/module.cjs"
+    }
+  },
+  "main": "./dist/module.cjs",
+  "types": "./dist/types.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepack": "nuxt-module-build build",
+    "dev": "nuxi dev playground",
+    "dev:build": "nuxi build playground",
+    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
+    "release": "npm run lint && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@nuxt/kit": "^3.8.0"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "@nuxt/eslint-config": "^0.2.0",
+    "@nuxt/module-builder": "^0.5.5",
+    "@nuxt/schema": "^3.8.0",
+    "@nuxt/test-utils": "^3.8.0",
+    "@types/node": "^20.10.4",
+    "changelogen": "^0.5.5",
+    "eslint": "^8.55.0",
+    "nuxt": "^3.8.0",
+    "stripe": "^14.7.0",
+    "typescript": "latest",
+    "vitest": "^1.0.4",
+    "vue-tsc": "^1.8.25"
+  },
+  "peerDependencies": {
+    "stripe": "^14.0.0"
+  },
+  "peerDependenciesMeta": {
+    "stripe": {
+      "optional": false
+    }
+  }
+}

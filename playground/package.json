@@ -1,0 +1,13 @@
+{
+  "name": "nuxt-stripe-payments-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build",
+    "preview": "nuxi preview"
+  },
+  "dependencies": {
+    "stripe": "^14.7.0"
+  }
+}
