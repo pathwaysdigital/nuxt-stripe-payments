@@ -6,10 +6,10 @@
         <div ref="paymentEl"></div>
         
         <button 
-            v-if="!loading && !hideButton"
+            v-if="!hideButton"
             @click="handleSubmit" 
             :class="buttonClass"
-            :disabled="isSubmitting || !canSubmit"
+            :disabled="loading || isSubmitting || !canSubmit"
         >
             {{ isSubmitting ? submittingText : buttonText }}
         </button>
@@ -141,9 +141,16 @@ onMounted(async () => {
         // Create and mount payment element
         const paymentElement = elements.value.create('payment')
         
-        // Listen for changes to enable submit button
+        // Listen for ready event
+        paymentElement.on('ready', () => {
+            canSubmit.value = true
+        })
+        
+        // Listen for changes to enable/disable submit button
         paymentElement.on('change', (event: any) => {
-            canSubmit.value = event.complete
+            if (event.complete) {
+                canSubmit.value = true
+            }
         })
         
         paymentElement.mount(paymentEl.value)
