@@ -17,7 +17,9 @@
 </template>
 
 <script setup lang="ts">
-import { useRuntimeConfig } from '#app'
+import { ref, computed, onMounted } from 'vue'
+import { useRuntimeConfig, $fetch } from '#app'
+import { useStripe } from '../composables/useStripe'
 
 interface Props {
     publishableKey?: string

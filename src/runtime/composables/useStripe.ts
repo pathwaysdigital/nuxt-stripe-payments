@@ -1,3 +1,5 @@
+import { useState } from '#app'
+
 /**
  * Composable to load Stripe.js script dynamically
  * No external dependencies - works in any Nuxt project
