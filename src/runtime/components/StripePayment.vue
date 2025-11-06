@@ -18,7 +18,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRuntimeConfig, $fetch } from '#app'
+import { useRuntimeConfig } from '#app'
+import { $fetch } from 'ofetch'
 import { useStripe } from '../composables/useStripe'
 
 interface Props {
