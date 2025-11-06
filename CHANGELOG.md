@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.0.7
+
+[compare changes](https://github.com/pathwaysdigital/nuxt-stripe-payments/compare/v1.0.6...v1.0.7)
+
+### 🏡 Chore
+
+- **release:** V1.0.6 ([83274d1](https://github.com/pathwaysdigital/nuxt-stripe-payments/commit/83274d1))
+
+### ❤️ Contributors
+
+- Pathwaysdigital <dev@pathways-digital.com>
+
 ## v1.0.6
 
 [compare changes](https://github.com/pathwaysdigital/nuxt-stripe-payments/compare/v1.0.4...v1.0.6)
