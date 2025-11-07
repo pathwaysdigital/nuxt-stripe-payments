@@ -1,6 +1,10 @@
 # Changelog
 
 
+## v1.1.1
+
+[compare changes](https://github.com/pathwaysdigital/nuxt-stripe-payments/compare/v1.1.0...v1.1.1)
+
 ## v1.0.7
 
 [compare changes](https://github.com/pathwaysdigital/nuxt-stripe-payments/compare/v1.0.6...v1.0.7)
