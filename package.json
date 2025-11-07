@@ -1,6 +1,6 @@
 {
   "name": "nuxt-stripe-payments",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Lightweight Stripe payment integration for Nuxt 3 with support for all payment methods",
   "keywords": [
     "nuxt",
