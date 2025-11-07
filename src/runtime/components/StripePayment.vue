@@ -1,26 +1,32 @@
 <template>
     <div>
-        <div v-if="error" class="text-red-500 mb-4">{{ error }}</div>
-        <div v-if="loading" class="text-gray-500 mb-4">{{ loadingText }}</div>
+        <div v-if="error" class="error-message">{{ error }}</div>
+        <div v-if="loading" class="loading-message">{{ loadingText }}</div>
         
         <div ref="paymentEl"></div>
         
-        <button 
+        <component 
+            :is="ButtonComponent"
             v-if="!hideButton"
             @click="handleSubmit" 
-            :class="buttonClass"
+            :class="isShadcnButton ? undefined : buttonClass"
             :disabled="loading || isSubmitting || !canSubmit"
+            variant="default"
         >
             {{ isSubmitting ? submittingText : buttonText }}
-        </button>
+        </component>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, shallowRef, type Component } from 'vue'
 import { useRuntimeConfig } from '#app'
 import { $fetch } from 'ofetch'
 import { useStripe } from '../composables/useStripe'
+
+// Dynamically check for shadcn-vue Button component
+const ButtonComponent = shallowRef<Component | string>('button')
+const isShadcnButton = ref(false)
 
 interface Props {
     publishableKey?: string
@@ -43,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
     buttonText: 'Pay Now',
     submittingText: 'Processing...',
     loadingText: 'Loading payment form...',
-    buttonClass: 'mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400',
+    buttonClass: 'stripe-payment-button',
     hideButton: false,
     appearance: () => ({})
 })
@@ -106,6 +112,19 @@ defineExpose({
 
 onMounted(async () => {
     try {
+        // Try to load shadcn-vue Button component if available
+        try {
+            // Use dynamic import with a variable to prevent build-time resolution
+            const componentPath = '@/components/ui/button/Button.vue'
+            const shadcnButton = await import(/* @vite-ignore */ componentPath).catch(() => null)
+            if (shadcnButton?.default) {
+                ButtonComponent.value = shadcnButton.default
+                isShadcnButton.value = true
+            }
+        } catch {
+            // Fallback to native button element
+        }
+
         // Validate publishable key
         if (!publishableKey.value) {
             throw new Error('Stripe publishable key is required. Set it in nuxt.config.ts or via publishableKey prop.')
@@ -164,3 +183,37 @@ onMounted(async () => {
     }
 })
 </script>
+
+<style scoped>
+.error-message {
+    color: #dc2626;
+    margin-bottom: 1rem;
+}
+
+.loading-message {
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.stripe-payment-button {
+    margin-top: 1rem;
+    width: 100%;
+    background-color: #2563eb;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.stripe-payment-button:hover:not(:disabled) {
+    background-color: #1d4ed8;
+}
+
+.stripe-payment-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+</style>

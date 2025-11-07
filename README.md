@@ -221,6 +221,106 @@ All configuration options can be overridden per component via props.
 | `hideButton` | `boolean` | `false` | Hide built-in button |
 | `appearance` | `object` | `{}` | Stripe Elements appearance |
 
+## Styling
+
+### Default Styling
+
+The component comes with clean, framework-agnostic CSS styling that works out of the box without any CSS framework:
+
+```vue
+<StripePayment :amount="1099" />
+```
+
+The default button uses vanilla CSS with a nice blue theme, hover states, and disabled states.
+
+### Custom Button Styling
+
+You can customize the button with your own CSS classes:
+
+```vue
+<StripePayment
+  :amount="1099"
+  button-class="my-custom-button"
+/>
+```
+
+```css
+.my-custom-button {
+  background: linear-gradient(to right, #667eea, #764ba2);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.my-custom-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.my-custom-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
+### shadcn-vue Integration
+
+The component automatically detects and uses [shadcn-vue](https://www.shadcn-vue.com/) Button component if it's installed in your project:
+
+```vue
+<!-- If shadcn-vue is installed, this automatically uses the shadcn Button -->
+<StripePayment :amount="1099" />
+```
+
+**How it works:**
+- The component tries to import `@/components/ui/button/Button.vue`
+- If found, it uses the shadcn Button with `variant="default"`
+- If not found, it falls back to a native HTML button with custom styling
+- When using shadcn, the `buttonClass` prop is ignored to preserve shadcn's styling
+
+**Manual shadcn setup:**
+
+If you want to ensure shadcn-vue is being used, install it first:
+
+```bash
+npx shadcn-vue@latest init
+npx shadcn-vue@latest add button
+```
+
+Then use the payment component as normal - it will automatically use your shadcn Button!
+
+### Hiding the Default Button
+
+If you want complete control over the button styling or layout:
+
+```vue
+<template>
+  <div>
+    <StripePayment
+      ref="paymentRef"
+      :amount="1099"
+      hide-button
+      @success="handleSuccess"
+    />
+    
+    <!-- Your custom button -->
+    <YourCustomButton @click="submitPayment">
+      Complete Purchase
+    </YourCustomButton>
+  </div>
+</template>
+
+<script setup>
+const paymentRef = ref(null)
+
+const submitPayment = () => {
+  paymentRef.value?.submit()
+}
+</script>
+```
+
 ## Events
 
 | Event | Payload | Description |
