@@ -61,8 +61,8 @@ Create `server/api/create-payment-intent.post.ts`:
 import Stripe from 'stripe'
 
 export default defineEventHandler(async (event) => {
-    const { amount, currency } = await readBody(event)
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+    const { amount, currency, metadata } = await readBody(event)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
     
     const paymentIntent = await stripe.paymentIntents.create({
         amount,
@@ -70,7 +70,8 @@ export default defineEventHandler(async (event) => {
         automatic_payment_methods: {
             enabled: true,
             allow_redirects: 'always'
-        }
+        },
+        metadata: metadata || {}  // e.g. { orderNumber: '12345', customerId: 'cus_abc' }
     })
     
     return {
