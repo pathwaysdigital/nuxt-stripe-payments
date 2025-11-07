@@ -40,6 +40,7 @@ interface Props {
     buttonClass?: string
     hideButton?: boolean
     appearance?: Record<string, any>
+    metadata?: Record<string, any>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -51,7 +52,8 @@ const props = withDefaults(defineProps<Props>(), {
     loadingText: 'Loading payment form...',
     buttonClass: 'stripe-payment-button',
     hideButton: false,
-    appearance: () => ({})
+    appearance: () => ({}),
+    metadata: () => ({})
 })
 
 const emit = defineEmits(['success', 'error', 'ready'])
@@ -138,7 +140,8 @@ onMounted(async () => {
             method: 'POST',
             body: { 
                 amount: props.amount,
-                currency: currency.value 
+                currency: currency.value,
+                metadata: props.metadata
             }
         })
         
