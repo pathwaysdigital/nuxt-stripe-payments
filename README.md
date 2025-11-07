@@ -122,6 +122,7 @@ const handleError = (error) => {
     button-text="Subscribe Now"
     button-class="custom-btn"
     :appearance="stripeAppearance"
+    :metadata="paymentMetadata"
     @success="handleSuccess"
     @error="handleError"
     @ready="handleReady"
@@ -134,6 +135,12 @@ const stripeAppearance = {
   variables: {
     colorPrimary: '#0570de'
   }
+}
+
+const paymentMetadata = {
+  orderNumber: '12345',
+  customerId: 'cus_abc123',
+  source: 'web'
 }
 </script>
 ```
@@ -221,6 +228,7 @@ All configuration options can be overridden per component via props.
 | `buttonClass` | `string` | Default styles | Custom button CSS classes |
 | `hideButton` | `boolean` | `false` | Hide built-in button |
 | `appearance` | `object` | `{}` | Stripe Elements appearance |
+| `metadata` | `object` | `{}` | Custom metadata to attach to the payment |
 
 ## Styling
 
