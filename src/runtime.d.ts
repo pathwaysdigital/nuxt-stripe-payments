@@ -15,6 +15,8 @@ declare module 'nuxt/schema' {
       publishableKey: string
       defaultCurrency: string
       apiEndpoint: string
+      checkoutSessionEndpoint: string
+      subscriptionEndpoint: string
     }
   }
 }

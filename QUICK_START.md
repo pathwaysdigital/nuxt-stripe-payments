@@ -68,3 +68,67 @@ const handleSuccess = (paymentIntent) => {
 ```
 
 That's it! 🎉
+
+## Subscriptions
+
+### 1. Create Checkout Session Endpoint
+
+`server/api/create-checkout-session.post.ts`:
+
+```typescript
+import Stripe from 'stripe'
+
+export default defineEventHandler(async (event) => {
+    const { priceId, customerEmail, trialPeriodDays } = await readBody(event)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+    
+    const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${getRequestURL(event).origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${getRequestURL(event).origin}/subscription-cancel`,
+        customer_email: customerEmail,
+        subscription_data: trialPeriodDays ? {
+            trial_period_days: trialPeriodDays
+        } : undefined
+    })
+    
+    return { sessionId: session.id, url: session.url }
+})
+```
+
+### 2. Use Subscription Component
+
+```vue
+<template>
+  <StripeSubscription
+    price-id="price_xxxxxxxxxxxxx"
+    customer-email="user@example.com"
+    :trial-period-days="14"
+    @success="handleSuccess"
+  />
+</template>
+
+<script setup>
+const handleSuccess = (session) => {
+  console.log('Redirecting to checkout...', session)
+}
+</script>
+```
+
+### 3. Manage Subscriptions
+
+```vue
+<script setup>
+const { cancelSubscription, createPortalSession } = useStripeSubscription()
+
+// Cancel at period end
+await cancelSubscription('sub_xxxxx', false)
+
+// Open customer portal
+const { url } = await createPortalSession('cus_xxxxx')
+window.location.href = url
+</script>
+```
+
+See the README for complete subscription documentation! 🚀

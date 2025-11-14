@@ -11,6 +11,8 @@ Lightweight Stripe payment integration for Nuxt 3 with support for all payment m
 
 ✅ **Zero Dependencies** - Loads Stripe.js dynamically, no heavy dependencies  
 ✅ **All Payment Methods** - Cards, Apple Pay, Google Pay, SEPA, EPS, Revolut Pay, etc.  
+✅ **Subscriptions** - Full support for Stripe subscriptions with Checkout Sessions  
+✅ **Subscription Management** - Cancel, update, resume, and manage subscriptions easily  
 ✅ **TypeScript Support** - Full type safety out of the box  
 ✅ **Auto-configured** - Works with Nuxt's auto-imports  
 ✅ **Customizable** - Full control over appearance and behavior  
@@ -184,6 +186,267 @@ const submitPayment = () => {
 </script>
 ```
 
+## Subscriptions
+
+The module includes full support for Stripe subscriptions using Checkout Sessions. Subscriptions redirect users to Stripe's hosted checkout page for a seamless experience.
+
+### Getting a Stripe Price ID
+
+Before using the `StripeSubscription` component, you need to create a Price in your Stripe Dashboard. Here's how:
+
+**Option 1: Stripe Dashboard (Recommended for beginners)**
+
+1. Go to [Stripe Dashboard](https://dashboard.stripe.com) → **Products**
+2. Click **"Add product"** or select an existing product
+3. Set up your pricing:
+   - Choose **Recurring** for subscriptions
+   - Set the billing period (monthly, yearly, etc.)
+   - Set the price amount
+   - Configure any additional options (trial period, metered billing, etc.)
+4. Click **"Save product"**
+5. Copy the **Price ID** (starts with `price_`) from the product page
+
+**Option 2: Stripe API (For programmatic setup)**
+
+```typescript
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
+// Create a product first
+const product = await stripe.products.create({
+  name: 'Premium Plan',
+  description: 'Monthly subscription to premium features'
+})
+
+// Create a price for the product
+const price = await stripe.prices.create({
+  product: product.id,
+  unit_amount: 2999, // $29.99 in cents
+  currency: 'usd',
+  recurring: {
+    interval: 'month'
+  }
+})
+
+console.log('Price ID:', price.id) // Use this in your component
+```
+
+**Option 3: Stripe CLI (For testing)**
+
+```bash
+# Create a test price
+stripe prices create \
+  --product prod_test123 \
+  --unit-amount 2999 \
+  --currency usd \
+  --recurring interval=month
+```
+
+The price ID will look like: `price_1ABC123def456GHI789jkl012`
+
+### Basic Subscription Example
+
+```vue
+<template>
+  <StripeSubscription
+    price-id="price_xxxxxxxxxxxxx"
+    @success="handleSuccess"
+    @error="handleError"
+  />
+</template>
+
+<script setup>
+const handleSuccess = (session) => {
+  console.log('Checkout session created:', session)
+  // User will be redirected to Stripe Checkout
+}
+
+const handleError = (error) => {
+  console.error('Subscription error:', error)
+}
+</script>
+```
+
+### Subscription with Trial Period
+
+```vue
+<template>
+  <StripeSubscription
+    price-id="price_xxxxxxxxxxxxx"
+    :trial-period-days="14"
+    customer-email="customer@example.com"
+    @success="handleSuccess"
+  />
+</template>
+```
+
+### Multiple Prices / Add-ons
+
+```vue
+<template>
+  <StripeSubscription
+    :price-id="['price_basic', 'price_addon']"
+    :quantity="1"
+    @success="handleSuccess"
+  />
+</template>
+```
+
+### Subscription Management
+
+Use the `useStripeSubscription` composable to manage subscriptions:
+
+```vue
+<template>
+  <div>
+    <button @click="cancelSub">Cancel Subscription</button>
+    <button @click="openPortal">Manage Subscription</button>
+  </div>
+</template>
+
+<script setup>
+const { cancelSubscription, createPortalSession } = useStripeSubscription()
+const subscriptionId = 'sub_xxxxxxxxxxxxx'
+const customerId = 'cus_xxxxxxxxxxxxx'
+
+const cancelSub = async () => {
+  try {
+    // Cancel at period end (recommended)
+    await cancelSubscription(subscriptionId, false)
+    alert('Subscription will cancel at period end')
+  } catch (error) {
+    console.error('Failed to cancel:', error)
+  }
+}
+
+const openPortal = async () => {
+  try {
+    const { url } = await createPortalSession(customerId)
+    window.location.href = url
+  } catch (error) {
+    console.error('Failed to open portal:', error)
+  }
+}
+</script>
+```
+
+### Update Subscription
+
+```vue
+<script setup>
+const { updateSubscription } = useStripeSubscription()
+
+const upgradePlan = async () => {
+  try {
+    await updateSubscription('sub_xxxxxxxxxxxxx', {
+      priceId: 'price_premium',
+      quantity: 1
+    })
+    alert('Subscription updated!')
+  } catch (error) {
+    console.error('Failed to update:', error)
+  }
+}
+</script>
+```
+
+### Backend Endpoints for Subscriptions
+
+Create `server/api/create-checkout-session.post.ts`:
+
+```typescript
+import Stripe from 'stripe'
+
+export default defineEventHandler(async (event) => {
+    const {
+        priceId,
+        customerId,
+        customerEmail,
+        mode = 'subscription',
+        allowPromotionCodes = false,
+        trialPeriodDays,
+        quantity = 1,
+        metadata = {},
+        successUrl,
+        cancelUrl
+    } = await readBody(event)
+    
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+    
+    const lineItems = Array.isArray(priceId) 
+        ? priceId.map((id: string) => ({ price: id, quantity }))
+        : [{ price: priceId, quantity }]
+    
+    const session = await stripe.checkout.sessions.create({
+        mode,
+        line_items: lineItems,
+        success_url: successUrl || `${getRequestURL(event).origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl || `${getRequestURL(event).origin}/subscription-cancel`,
+        allow_promotion_codes: allowPromotionCodes,
+        customer: customerId,
+        customer_email: customerEmail,
+        subscription_data: trialPeriodDays ? {
+            trial_period_days: trialPeriodDays
+        } : undefined,
+        metadata
+    })
+    
+    return {
+        sessionId: session.id,
+        url: session.url
+    }
+})
+```
+
+Create `server/api/subscriptions/[id].put.ts` for updating subscriptions:
+
+```typescript
+import Stripe from 'stripe'
+
+export default defineEventHandler(async (event) => {
+    const id = getRouterParam(event, 'id')
+    const { priceId, quantity, metadata } = await readBody(event)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+    
+    const subscription = await stripe.subscriptions.retrieve(id!)
+    const subscriptionItemId = subscription.items.data[0]?.id
+    
+    const updated = await stripe.subscriptions.update(id!, {
+        items: [{
+            id: subscriptionItemId,
+            price: priceId,
+            quantity
+        }],
+        metadata: metadata || {}
+    })
+    
+    return updated
+})
+```
+
+Create `server/api/subscriptions/[id]/cancel.post.ts` for canceling:
+
+```typescript
+import Stripe from 'stripe'
+
+export default defineEventHandler(async (event) => {
+    const id = getRouterParam(event, 'id')
+    const { immediately = false } = await readBody(event)
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+    
+    if (immediately) {
+        return await stripe.subscriptions.cancel(id!)
+    } else {
+        return await stripe.subscriptions.update(id!, {
+            cancel_at_period_end: true
+        })
+    }
+})
+```
+
+See the `playground/server/api` directory for complete examples of all subscription endpoints.
+
 ## Module Configuration
 
 Configure default values in `nuxt.config.ts`:
@@ -209,11 +472,15 @@ export default defineNuxtConfig({
 |--------|------|---------|-------------|
 | `publishableKey` | `string` | `''` | Default Stripe publishable key |
 | `defaultCurrency` | `string` | `'eur'` | Default currency for payments |
-| `apiEndpoint` | `string` | `'/api/create-payment-intent'` | Default API endpoint |
+| `apiEndpoint` | `string` | `'/api/create-payment-intent'` | Default API endpoint for payment intents |
+| `checkoutSessionEndpoint` | `string` | `'/api/create-checkout-session'` | Default API endpoint for checkout sessions (subscriptions) |
+| `subscriptionEndpoint` | `string` | `'/api/subscriptions'` | Default API endpoint for subscription management |
 
 All configuration options can be overridden per component via props.
 
 ## Component Props
+
+### StripePayment Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -229,6 +496,28 @@ All configuration options can be overridden per component via props.
 | `hideButton` | `boolean` | `false` | Hide built-in button |
 | `appearance` | `object` | `{}` | Stripe Elements appearance |
 | `metadata` | `object` | `{}` | Custom metadata to attach to the payment |
+
+### StripeSubscription Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `priceId` | `string \| string[]` | **required** | Stripe price ID(s) for subscription |
+| `customerId` | `string` | `''` | Existing Stripe customer ID |
+| `customerEmail` | `string` | `''` | Customer email (creates customer if not exists) |
+| `checkoutSessionEndpoint` | `string` | from config | Backend endpoint for checkout sessions |
+| `successUrl` | `string` | `''` | URL to redirect after successful checkout |
+| `cancelUrl` | `string` | `''` | URL to redirect if checkout is canceled |
+| `buttonText` | `string` | `'Subscribe Now'` | Button text |
+| `submittingText` | `string` | `'Redirecting...'` | Loading button text |
+| `buttonClass` | `string` | Default styles | Custom button CSS classes |
+| `hideButton` | `boolean` | `false` | Hide built-in button |
+| `metadata` | `object` | `{}` | Custom metadata to attach to subscription |
+| `mode` | `'subscription' \| 'setup' \| 'payment'` | `'subscription'` | Checkout session mode |
+| `allowPromotionCodes` | `boolean` | `false` | Allow promotion codes in checkout |
+| `trialPeriodDays` | `number` | `undefined` | Number of trial days |
+| `quantity` | `number` | `1` | Subscription quantity |
+| `billingAddressCollection` | `'auto' \| 'required'` | `'auto'` | Billing address collection |
+| `collectShippingAddress` | `boolean` | `false` | Collect shipping address |
 
 ## Styling
 
@@ -338,15 +627,54 @@ const submitPayment = () => {
 | `@error` | `errorMessage` | Error occurred |
 | `@ready` | - | Form ready for input |
 
-## Composable
+## Composables
 
-You can also use the `useStripe()` composable directly:
+### useStripe()
+
+Composable to load Stripe.js script dynamically:
 
 ```typescript
 const { loadStripe, stripeInstance, isLoaded } = useStripe()
 
 // Load Stripe
 const stripe = await loadStripe('pk_test_xxxxx')
+```
+
+### useStripeSubscription()
+
+Composable for managing Stripe subscriptions:
+
+```typescript
+const {
+  cancelSubscription,
+  updateSubscription,
+  getSubscription,
+  resumeSubscription,
+  createPortalSession,
+  listSubscriptions
+} = useStripeSubscription()
+
+// Cancel subscription
+await cancelSubscription('sub_xxxxx', false) // false = cancel at period end
+
+// Update subscription
+await updateSubscription('sub_xxxxx', {
+  priceId: 'price_new',
+  quantity: 2
+})
+
+// Get subscription
+const subscription = await getSubscription('sub_xxxxx')
+
+// Resume canceled subscription
+await resumeSubscription('sub_xxxxx')
+
+// Open customer portal
+const { url } = await createPortalSession('cus_xxxxx')
+window.location.href = url
+
+// List customer subscriptions
+const { subscriptions } = await listSubscriptions('cus_xxxxx')
 ```
 
 ## Payment Methods Supported
